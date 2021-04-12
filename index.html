@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpaceX Launch Programs</title>
+    <link href="style.css" rel='stylesheet' />
+</head>
+<body>
+    
+    <div id="root"></div>
+
+    <script src="js/react.development.js"></script>
+    <script src="js/react-dom.development.js"></script>
+    <script src="js/babel.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    
+
+    <script type="text/babel">
+        const rootHandle = document.getElementById('root')
+        const url = 'https://api.spacexdata.com/v3/launches?limit=100&launch_success=true'
+        const { useState, useEffect } = React
+
+        function YearData(props){
+            const {year, showData, selectedYear} = props
+            return(
+                <div className={selectedYear == year ? 'yearBtn' : 'yearBtnRed'} onClick={()=>{showData(year)}}>{year}</div>
+            )
+        }
+
+        function LaunchProgram(props){
+            const [ launch, setLaunch ] = useState([])
+            const [ selectLaunch, setSelectLaunch ] = useState([])
+            const [selectedYear, setSelectedYear] = useState(2008)
+
+            useEffect((e) => {
+                axios.get(url).then((response) => {
+                    //console.log(response.data)
+                    const result = response.data
+                    setLaunch(result)
+                })
+            }, [])
+
+            useEffect(()=>{
+                filterlaunchData(selectedYear)
+            },[launch])
+
+            //filters users data of particular Job Title
+            const filterlaunchData = (year) =>{ 
+                const result = launch.filter((ele) => {
+                    return ele.launch_year == year
+                })
+                setSelectLaunch(result)
+            }
+
+            const showData = ((year) => {
+                const result = launch.filter((ele) => {
+                    // console.log(ele)
+                    return ele.launch_year === year
+                })
+                setSelectLaunch(result)
+                setSelectedYear(year)
+            })
+
+            
+            //find unique years
+           const distinctYears = [...new Set(launch.map(ele => ele.launch_year))]
+             
+            return(
+                <div className='page clearfix'>
+                    <h1 className='page_title'>SpaceX Launch Programs</h1>
+                    <div className='filters clearfix'> 
+                    <h2 className='filterHeader'>Filters</h2>
+                        <p className='launchyear'>Launch Year</p>
+                        <div className='btns'>
+                            {distinctYears.map((year)=>{
+                                return <YearData showData = {showData} year = {year} selectedYear={selectedYear}/>
+                            })}
+                        </div>
+                    </div>
+                    <div className='launchData'>
+                        <div className='data_body clearfix'>
+                            {
+                                selectLaunch.map((ele, id) => {
+                                    return (
+                                        <div key={id} className='data_details'>
+                                            <div className='center'>
+                                                <img src={ele.links.mission_patch_small} className='imgStyle'/>
+                                            </div>
+                                            <h3 className='launch_title'>{ele.mission_name} #{ele.flight_number}</h3>
+                                            <h4>Mission IDs</h4><ul><li>{ele.mission_id}</li></ul>
+                                            <p className='launch_info'>Launch Year: <span className='info'>{ele.launch_year}</span></p>
+                                            <p className='launch_info'>Rocket type: <span className='info'>{ele.rocket.rocket_type}</span></p>
+                                            <p className='launch_info'>Successful Launch: <span className='info'>true</span></p>
+                                        </div>
+                                    )
+                                })
+                            }
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+       
+        ReactDOM.render(<LaunchProgram />, rootHandle)
+        
+    </script>
+</body>
+</html>
